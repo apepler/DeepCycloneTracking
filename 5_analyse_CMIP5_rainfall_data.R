@@ -336,8 +336,10 @@ tmp1a[freq<1]=NaN # Only calculate where at least one cyclone day per year in th
 b=apply(tmp1a,c(1,2),mean,na.rm=T)
 apply(b,2,mean)
 
-I=which(abs(lat)>=15 & abs(lat)<=75) # What about excluding tropics & poles?
-b=apply(tmp1a[,,,I],c(1,2),mean,na.rm=T)
+#I=which(abs(lat)>=15 & abs(lat)<=75) # What about excluding tropics & poles?
+I=which(lat>=-45 & lat<=-25)
+J=which(lon>=110 & lon<=155)
+b=apply(tmp1a[,,J,I],c(1,2),mean,na.rm=T)
 apply(b,2,mean)
 
 ## Plots averaged across latitudes
@@ -454,6 +456,20 @@ for(i in 1:length(cmiplist))
       }
     }
 
+### Some stuff for just Australia
+I=which(lat>=-45 & lat<=-25)
+J=which(lon>=110 & lon<=155)
+s=7
+tmp1=abind(apply(cyc_freq[,1,,J,I,mlist[[s]]],c(1,2),sum),
+            apply(cyc_rain[,1,,J,I,mlist[[s]]],c(1,2),sum),
+            apply(cyc_raindays[,1,,J,I,mlist[[s]]],c(1,2),sum),
+            apply(cyc_raindayrain[,1,,J,I,mlist[[s]]],c(1,2),sum)/apply(cyc_raindays[,1,,J,I,mlist[[s]]],c(1,2),sum),
+            apply(cyc_threshdays[,1,,J,I,mlist[[s]]],c(1,2),sum),
+            apply(cyc_threshdays2[,1,,J,I,mlist[[s]]],c(1,2),sum),along=3)
+
+dimnames(tmp1)[[3]]=c("Days","Total rainfall","Rain days","Rain rate","P99 days","P99.7 days")
+tmp1[1,2,]/apply(tmp1[1,,],2,sum)
+apply(tmp1[2:11,2,]/apply(tmp1[2:11,,],c(1,3),sum),2,mean)
 ## 2. Projected changes in frequency 
 
 cycchange=array(0,c(length(latreg),10,5,6,5,3))
@@ -486,3 +502,38 @@ for(i in 1:10)
 
 cycchange[,,,,4,]=100*((cycchange[,,,,2,]/cycchange[,,,,1,])-1)
 cycchange[,,,,5,]=100*((cycchange[,,,,3,]/cycchange[,,,,1,])-1)
+
+##Aust region
+I=which(lat>=-45 & lat<=-25)
+J=which(lon>=110 & lon<=155)
+
+cycchange=array(0,c(10,5,6,5,3))
+dimnames(cycchange)[[1]]=cmiplist[2:11]
+dimnames(cycchange)[[2]]=c("No cyclone","Deep cyclone","Shallow surface","Shallow upper","All")
+dimnames(cycchange)[[3]]=c("Days","Total rainfall","Rain days","Rain rate","P99 days","P99.7 days")
+dimnames(cycchange)[[4]]=c("1979-2005","2070-2099 rcp85","2070-2099 rcp45","change rcp85","change rcp45")
+dimnames(cycchange)[[5]]=snames[5:7]
+
+for(i in 1:10)
+  for(j in 1:6)
+    for(s in 5:7)
+    {
+      tmp1=switch(j,apply(cyc_freq[i+1,,,J,I,mlist[[s]]],c(1,2),sum),
+                  apply(cyc_rain[i+1,,,J,I,mlist[[s]]],c(1,2),sum),
+                  apply(cyc_raindays[i+1,,,,,mlist[[s]]],c(1,2),sum),
+                  apply(cyc_rain[i+1,,,J,I,mlist[[s]]],c(1,2),sum)/apply(cyc_freq[i+1,,,J,I,mlist[[s]]],c(1,2),sum),
+                  apply(cyc_threshdays[i+1,,,J,I,mlist[[s]]],c(1,2),sum),
+                  apply(cyc_threshdays2[i+1,,,J,I,mlist[[s]]],c(1,2),sum))
+      
+        for(r in 1:3)
+        {
+          for(k in 1:4) cycchange[i,k,j,r,s-4]=tmp1[r,k]
+          cycchange[i,5,j,r,s-4]=sum(tmp1[r,])
+        }
+    }
+cycchange[,,,4,]=100*((cycchange[,,,2,]/cycchange[,,,1,])-1)
+cycchange[,,,5,]=100*((cycchange[,,,3,]/cycchange[,,,1,])-1)
+
+
+
+
